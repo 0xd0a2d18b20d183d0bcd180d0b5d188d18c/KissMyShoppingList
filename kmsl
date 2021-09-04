@@ -1,0 +1,70 @@
+#!/bin/zsh
+
+PATHTODB="$HOME/.local/share/KissMyShoppingList/database.db"
+PATHTO="$HOME/.local/share/KissMyShoppingList/"
+
+## Add items
+
+if [ $1 = "ai" ]; then
+	sqlite3 -batch $PATHTODB "INSERT INTO s_list(title, category, priority) \
+	VALUES ('$2', '$3', '$4');"
+
+## End of add items section
+
+## Update item
+elif [ $1 = "ui" ]; then
+	sqlite3 -batch $PATHTODB "UPDATE s_list SET $3 = '$4' WHERE rowid = $2;"
+
+elif [ $1 = "ci" ]; then
+	sqlite3 -batch $PATHTODB "UPDATE s_list SET isCompleted = 1 WHERE rowid = $2;"
+
+## End of update items section
+
+## Read items
+elif [ $1 = "vi" ]; then
+	if ! [ -z "$2" ] && ! [ -z "$3" ]; then
+		sqlite3 -batch $PATHTODB "SELECT rowid, title, category, priority \
+		FROM s_list WHERE $2 = '$3' AND isCompleted IS NULL;"
+	else
+		sqlite3 -batch $PATHTODB "SELECT rowid, title, category, priority \
+		FROM s_list WHERE isCompleted IS NULL;"
+	fi
+## End of read items section
+
+## Delete item
+elif [ $1 = "di" ]; then
+	sqlite3 -batch $PATHTODB "DELETE FROM s_list WHERE rowid = $2;"
+
+## End of delete items section
+
+## System methods
+
+## Init
+elif [ $1 = "init" ]; then
+	if ! [ -f "$PATHTODB" ]; then
+		mkdir -p $PATHTO
+		touch $PATHTODB
+		sqlite3 -batch $PATHTODB "CREATE TABLE IF NOT EXISTS s_list \
+		(title TEXT NOT NULL, desc TEXT, url TEXT, category TEXT, \
+		priority TEXT NOT NULL, isCompleted BOOLEAN);"
+	else
+		echo "Database is exists. Exec clenup before."
+	fi
+
+## Backup
+elif [ $1 = "backup" ]; then
+	cp $PATHTODB ./database_$(date '+%Y-%m-%d').db
+
+## Recovery from backup
+elif [ $1 = "recovery" ]; then
+	if ! [ -z $2 ]; then
+		cp $2 $PATHTODB
+	fi
+
+## Delete
+elif [ $1 = "delete"] && [ $2 = "yes_I_am_sure" ]; then
+	rm -r $PATHTO
+
+## End of system methods section
+fi
+
